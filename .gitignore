@@ -1,0 +1,34 @@
+# Terraform state and local inputs
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+tfplan-*
+terraform.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl.backup
+
+# Credentials and generated cluster access
+*.pem
+*.key
+*.kubeconfig
+kubeconfig
+.env
+.env.*
+!.env.example
+ansible/inventory/hosts.yml
+
+# Local tooling
+.codebase-memory/
+.idea/
+.vscode/
+*.swp
+*.tmp
+__pycache__/
+
+# Benchmark artifacts may contain endpoint details; curated results are tracked.
+benchmarks/raw/
