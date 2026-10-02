@@ -1,0 +1,13 @@
+---
+- name: Check whether the worker is joined
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubernetes_kubelet_conf
+
+- name: Join the worker to the cluster
+  ansible.builtin.command: >-
+    {{ hostvars[groups['control_plane'][0]].worker_join_command }}
+    --cri-socket=unix:///run/containerd/containerd.sock
+  when: not kubernetes_kubelet_conf.stat.exists
+  changed_when: true
+  no_log: true

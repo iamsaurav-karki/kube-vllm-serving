@@ -1,0 +1,46 @@
+---
+- name: Initialize the Kubernetes control plane
+  hosts: control_plane
+  become: true
+  roles:
+    - control_plane
+
+- name: Join Kubernetes GPU workers
+  hosts: gpu_workers
+  become: true
+  roles:
+    - worker
+
+- name: Apply worker scheduling labels
+  hosts: control_plane
+  become: true
+  tasks:
+    - name: Wait for workers to register with the API server
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - --kubeconfig=/etc/kubernetes/admin.conf
+          - get
+          - node
+          - "{{ item }}"
+      loop: "{{ groups['gpu_workers'] }}"
+      register: registered_worker
+      until: registered_worker.rc == 0
+      retries: 30
+      delay: 10
+      changed_when: false
+
+    - name: Label GPU workers for workload scheduling
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - --kubeconfig=/etc/kubernetes/admin.conf
+          - label
+          - node
+          - "{{ item }}"
+          - node-role.kubernetes.io/worker=
+          - accelerator=nvidia-gpu
+          - --overwrite
+      loop: "{{ groups['gpu_workers'] }}"
+      register: worker_label
+      changed_when: "'not labeled' not in worker_label.stdout"

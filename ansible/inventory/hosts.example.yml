@@ -1,0 +1,17 @@
+---
+all:
+  vars:
+    ansible_user: sauravkarki
+    ansible_ssh_private_key_file: ~/.ssh/llmplat_ed25519
+    ansible_become: true
+  children:
+    control_plane:
+      hosts:
+        kube-control:
+          ansible_host: CONTROL_PLANE_PUBLIC_IP
+          private_ip: 10.42.0.10
+    gpu_workers:
+      hosts:
+        kube-gpu-worker:
+          ansible_host: GPU_WORKER_PUBLIC_IP
+          private_ip: 10.42.0.20

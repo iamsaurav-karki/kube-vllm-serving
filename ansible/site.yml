@@ -1,0 +1,14 @@
+---
+- name: Prepare all Kubernetes nodes
+  hosts: all
+  serial: 1
+  become: true
+  roles:
+    - common
+    - kubernetes
+
+- name: Prepare NVIDIA GPU workers
+  hosts: gpu_workers
+  become: true
+  roles:
+    - nvidia

@@ -1,0 +1,107 @@
+---
+- name: Install NVIDIA driver build prerequisites
+  ansible.builtin.apt:
+    name:
+      - dkms
+      - "linux-headers-{{ ansible_kernel }}"
+    state: present
+    update_cache: true
+
+- name: Remove the generic CUDA driver repository
+  ansible.builtin.apt:
+    name: cuda-keyring
+    state: absent
+    purge: true
+
+- name: Remove incompatible packaged NVIDIA driver
+  ansible.builtin.apt:
+    name: nvidia-driver-595-server
+    state: absent
+    purge: true
+    autoremove: true
+    allow_change_held_packages: true
+
+- name: Download the pinned Azure GRID driver
+  ansible.builtin.get_url:
+    url: "{{ nvidia_driver_url }}"
+    dest: "/var/cache/NVIDIA-Linux-x86_64-{{ nvidia_driver_version }}-grid-azure.run"
+    checksum: "sha256:{{ nvidia_driver_sha256 }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Unload the incompatible NVIDIA module
+  ansible.builtin.command: modprobe --remove nvidia
+  register: nvidia_module_unload
+  changed_when: nvidia_module_unload.rc == 0
+  failed_when: false
+
+- name: Install the pinned Azure GRID driver
+  ansible.builtin.command:
+    argv:
+      - "/var/cache/NVIDIA-Linux-x86_64-{{ nvidia_driver_version }}-grid-azure.run"
+      - --silent
+      - --dkms
+  args:
+    creates: /usr/bin/nvidia-uninstall
+  register: nvidia_driver_install
+
+- name: Install NVIDIA Container Toolkit repository signing key
+  ansible.builtin.get_url:
+    url: https://nvidia.github.io/libnvidia-container/gpgkey
+    dest: /etc/apt/keyrings/nvidia-container-toolkit.asc
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Configure NVIDIA Container Toolkit repository
+  ansible.builtin.deb822_repository:
+    name: nvidia-container-toolkit
+    types: [deb]
+    uris: https://nvidia.github.io/libnvidia-container/stable/deb/amd64
+    suites: ["/"]
+    signed_by: /etc/apt/keyrings/nvidia-container-toolkit.asc
+    state: present
+
+- name: Install pinned NVIDIA Container Toolkit packages
+  ansible.builtin.apt:
+    name:
+      - "nvidia-container-toolkit={{ nvidia_container_toolkit_version }}"
+      - "nvidia-container-toolkit-base={{ nvidia_container_toolkit_version }}"
+      - "libnvidia-container-tools={{ nvidia_container_toolkit_version }}"
+      - "libnvidia-container1={{ nvidia_container_toolkit_version }}"
+    state: present
+    update_cache: true
+    allow_downgrade: true
+
+- name: Hold NVIDIA Container Toolkit packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - nvidia-container-toolkit
+    - nvidia-container-toolkit-base
+    - libnvidia-container-tools
+    - libnvidia-container1
+
+- name: Configure the NVIDIA runtime for Kubernetes containerd
+  ansible.builtin.command: nvidia-ctk runtime configure --runtime=containerd
+  args:
+    creates: /etc/containerd/conf.d/99-nvidia.toml
+  notify: Restart containerd after NVIDIA configuration
+
+- name: Flush NVIDIA runtime handler before validation
+  ansible.builtin.meta: flush_handlers
+
+- name: Reboot after first NVIDIA driver installation
+  ansible.builtin.reboot:
+    reboot_timeout: 900
+  when: nvidia_driver_install.changed
+
+- name: Verify the host NVIDIA driver
+  ansible.builtin.command: nvidia-smi
+  changed_when: false
+
+- name: Verify NVIDIA Container Toolkit can inspect the GPU
+  ansible.builtin.command: nvidia-container-cli info
+  changed_when: false

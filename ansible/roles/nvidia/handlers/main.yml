@@ -1,0 +1,5 @@
+---
+- name: Restart containerd after NVIDIA configuration
+  ansible.builtin.service:
+    name: containerd
+    state: restarted

@@ -1,0 +1,14 @@
+---
+kubernetes_minor_version: "v1.36"
+kubernetes_package_version: "1.36.5-1.1"
+kubernetes_version: "v1.36.5"
+containerd_package_version: "2.3.6-1~ubuntu.22.04~jammy"
+
+nvidia_driver_version: "570.237"
+nvidia_driver_url: https://download.microsoft.com/download/5e213ec5-834f-4b0a-87f7-772751353b06/NVIDIA-Linux-x86_64-570.237-grid-azure.run
+nvidia_driver_sha256: "1a529dd4d173ba3b36f3c284bb54fce5dd39c9e757856980b8ae0b7798e7764b"
+nvidia_container_toolkit_version: "1.20.1-1"
+
+pod_network_cidr: "192.168.0.0/16"
+service_cidr: "10.96.0.0/12"
+kubernetes_api_port: 6443
