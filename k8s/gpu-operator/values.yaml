@@ -1,0 +1,21 @@
+driver:
+  enabled: false
+
+toolkit:
+  enabled: false
+
+cdi:
+  enabled: true
+
+dcgmExporter:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    additionalLabels:
+      release: monitoring
+
+nfd:
+  enabled: true
+
+mig:
+  strategy: single

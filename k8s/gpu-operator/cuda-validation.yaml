@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cuda-validation
+spec:
+  restartPolicy: Never
+  nodeSelector:
+    accelerator: nvidia-gpu
+  containers:
+    - name: nvidia-smi
+      image: nvcr.io/nvidia/cuda:13.0.2-base-ubuntu22.04
+      command:
+        - nvidia-smi
+      resources:
+        limits:
+          nvidia.com/gpu: 1
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
