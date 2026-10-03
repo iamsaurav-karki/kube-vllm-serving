@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: local-path-smoke-test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 32Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: local-path-smoke-test
+spec:
+  restartPolicy: Never
+  nodeSelector:
+    accelerator: nvidia-gpu
+  containers:
+    - name: writer
+      image: docker.io/library/busybox:1.37.0
+      command:
+        - /bin/sh
+        - -c
+        - printf storage-ready > /data/status && sleep 300
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: local-path-smoke-test
