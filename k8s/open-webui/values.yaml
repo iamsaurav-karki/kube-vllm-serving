@@ -1,0 +1,80 @@
+ollama:
+  enabled: false
+
+pipelines:
+  enabled: false
+
+websocket:
+  enabled: true
+  manager: ""
+  redis:
+    enabled: false
+
+image:
+  tag: v0.11.4
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 2
+    memory: 2Gi
+
+nodeSelector:
+  kubernetes.io/hostname: kube-gpu-worker
+
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClass: local-path
+  accessModes:
+    - ReadWriteOnce
+
+service:
+  type: ClusterIP
+  port: 80
+  containerPort: 8080
+
+enableOpenaiApi: true
+openaiBaseApiUrl: http://vllm.llm-system.svc.cluster.local:8000/v1
+openaiApiKeyExistingSecret: open-webui-vllm-api
+openaiApiKeyExistingSecretKey: api-key
+
+extraEnvFrom:
+  - secretRef:
+      name: open-webui-admin
+
+extraEnvVars:
+  - name: WEBUI_URL
+    value: https://llm.ksaurav.com.np
+  - name: ENABLE_SIGNUP
+    value: "false"
+  - name: ENABLE_PERSISTENT_CONFIG
+    value: "false"
+  - name: DEFAULT_MODELS
+    value: Qwen/Qwen3-8B
+
+startupProbe:
+  httpGet:
+    path: /health
+    port: http
+  failureThreshold: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /health/db
+    port: http
+  failureThreshold: 6
+  periodSeconds: 10
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  failureThreshold: 3
+  periodSeconds: 20

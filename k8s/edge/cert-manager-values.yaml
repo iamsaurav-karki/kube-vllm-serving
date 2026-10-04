@@ -1,0 +1,52 @@
+crds:
+  enabled: true
+
+config:
+  apiVersion: controller.config.cert-manager.io/v1alpha1
+  kind: ControllerConfiguration
+  gatewayAPI:
+    enabled: true
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+nodeSelector:
+  kubernetes.io/hostname: kube-gpu-worker
+
+webhook:
+  nodeSelector:
+    kubernetes.io/hostname: kube-gpu-worker
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+cainjector:
+  nodeSelector:
+    kubernetes.io/hostname: kube-gpu-worker
+  resources:
+    requests:
+      cpu: 20m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+
+startupapicheck:
+  nodeSelector:
+    kubernetes.io/hostname: kube-gpu-worker
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
