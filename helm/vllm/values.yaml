@@ -1,0 +1,55 @@
+replicaCount: 1
+
+image:
+  repository: docker.io/vllm/vllm-openai
+  tag: v0.30.0
+  digest: sha256:8a69ffad015f138d7170c4ddc429e230a3bc1c1719f67e14324749df200a4b90
+  pullPolicy: IfNotPresent
+
+model:
+  id: Qwen/Qwen3-8B
+  servedName: Qwen/Qwen3-8B
+  revision: b968826d9c46dd6066d109eabc6255188de91218
+  dtype: bfloat16
+  maxLength: 8192
+  gpuMemoryUtilization: "0.90"
+  tensorParallelSize: 1
+  reasoningParser: qwen3
+  toolCallParser: hermes
+
+secrets:
+  huggingFace:
+    name: vllm-huggingface
+    key: token
+  apiKey:
+    name: vllm-api-key
+    key: api-key
+
+service:
+  port: 8000
+
+persistence:
+  enabled: true
+  storageClassName: local-path
+  accessMode: ReadWriteOnce
+  size: 80Gi
+
+resources:
+  requests:
+    cpu: "8"
+    memory: 32Gi
+  limits:
+    cpu: "32"
+    memory: 96Gi
+    nvidia.com/gpu: 1
+
+nodeSelector:
+  accelerator: nvidia-gpu
+
+tolerations: []
+
+serviceMonitor:
+  enabled: true
+  interval: 15s
+  additionalLabels:
+    release: monitoring

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: vllm
+description: Single-GPU Qwen3-8B serving with the vLLM OpenAI-compatible API
+type: application
+version: 0.1.0
+appVersion: "0.30.0"

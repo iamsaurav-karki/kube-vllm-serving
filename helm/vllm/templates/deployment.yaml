@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vllm.fullname" . }}
+  labels:
+    {{- include "vllm.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  progressDeadlineSeconds: 2400
+  selector:
+    matchLabels:
+      {{- include "vllm.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "vllm.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "vllm.fullname" . }}
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        fsGroup: 0
+        fsGroupChangePolicy: OnRootMismatch
+        runAsNonRoot: true
+        runAsUser: 2000
+        runAsGroup: 0
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: vllm
+          image: {{ include "vllm.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --model
+            - {{ .Values.model.id | quote }}
+            - --served-model-name
+            - {{ .Values.model.servedName | quote }}
+            - --revision
+            - {{ .Values.model.revision | quote }}
+            - --dtype
+            - {{ .Values.model.dtype | quote }}
+            - --max-model-len
+            - {{ .Values.model.maxLength | quote }}
+            - --gpu-memory-utilization
+            - {{ .Values.model.gpuMemoryUtilization | quote }}
+            - --tensor-parallel-size
+            - {{ .Values.model.tensorParallelSize | quote }}
+            - --reasoning-parser
+            - {{ .Values.model.reasoningParser | quote }}
+            - --enable-auto-tool-choice
+            - --tool-call-parser
+            - {{ .Values.model.toolCallParser | quote }}
+            - --api-key
+            - $(VLLM_API_KEY)
+            - --host
+            - 0.0.0.0
+            - --port
+            - {{ .Values.service.port | quote }}
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.huggingFace.name }}
+                  key: {{ .Values.secrets.huggingFace.key }}
+            - name: VLLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.apiKey.name }}
+                  key: {{ .Values.secrets.apiKey.key }}
+            - name: HOME
+              value: /home/vllm
+            - name: HF_HOME
+              value: /home/vllm/.cache/huggingface
+            - name: VLLM_CACHE_ROOT
+              value: /home/vllm/.cache/vllm
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 180
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: cache
+              mountPath: /home/vllm/.cache
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      volumes:
+        - name: cache
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "vllm.fullname" . }}-cache
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
