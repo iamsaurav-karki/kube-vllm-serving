@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-serving-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  ai-serving.json: |-
+    {
+      "annotations": {"list": []},
+      "editable": true,
+      "graphTooltip": 1,
+      "panels": [
+        {
+          "type": "stat",
+          "title": "vLLM requests / second",
+          "id": 1,
+          "gridPos": {"h": 7, "w": 6, "x": 0, "y": 0},
+          "targets": [{"expr": "sum(rate(vllm:request_success_total[5m]))", "legendFormat": "requests/s"}],
+          "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []}
+        },
+        {
+          "type": "stat",
+          "title": "Requests running",
+          "id": 2,
+          "gridPos": {"h": 7, "w": 6, "x": 6, "y": 0},
+          "targets": [{"expr": "sum(vllm:num_requests_running)", "legendFormat": "running"}],
+          "fieldConfig": {"defaults": {}, "overrides": []}
+        },
+        {
+          "type": "gauge",
+          "title": "KV cache usage",
+          "id": 3,
+          "gridPos": {"h": 7, "w": 6, "x": 12, "y": 0},
+          "targets": [{"expr": "max(vllm:kv_cache_usage_perc) * 100", "legendFormat": "KV cache"}],
+          "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}, "overrides": []}
+        },
+        {
+          "type": "gauge",
+          "title": "GPU utilization",
+          "id": 4,
+          "gridPos": {"h": 7, "w": 6, "x": 18, "y": 0},
+          "targets": [{"expr": "max(DCGM_FI_DEV_GPU_UTIL)", "legendFormat": "{{gpu}}"}],
+          "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}, "overrides": []}
+        },
+        {
+          "type": "timeseries",
+          "title": "End-to-end latency",
+          "id": 5,
+          "gridPos": {"h": 9, "w": 12, "x": 0, "y": 7},
+          "targets": [
+            {"expr": "histogram_quantile(0.50, sum(rate(vllm:e2e_request_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p50"},
+            {"expr": "histogram_quantile(0.95, sum(rate(vllm:e2e_request_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p95"},
+            {"expr": "histogram_quantile(0.99, sum(rate(vllm:e2e_request_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p99"}
+          ],
+          "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}
+        },
+        {
+          "type": "timeseries",
+          "title": "Token throughput",
+          "id": 6,
+          "gridPos": {"h": 9, "w": 12, "x": 12, "y": 7},
+          "targets": [
+            {"expr": "sum(rate(vllm:prompt_tokens_total[5m]))", "legendFormat": "prompt tokens/s"},
+            {"expr": "sum(rate(vllm:generation_tokens_total[5m]))", "legendFormat": "generation tokens/s"}
+          ],
+          "fieldConfig": {"defaults": {"unit": "cps"}, "overrides": []}
+        },
+        {
+          "type": "timeseries",
+          "title": "GPU framebuffer memory",
+          "id": 7,
+          "gridPos": {"h": 9, "w": 12, "x": 0, "y": 16},
+          "targets": [
+            {"expr": "max(DCGM_FI_DEV_FB_USED) * 1024 * 1024", "legendFormat": "used"},
+            {"expr": "max(DCGM_FI_DEV_FB_FREE) * 1024 * 1024", "legendFormat": "free"}
+          ],
+          "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []}
+        },
+        {
+          "type": "timeseries",
+          "title": "Queue depth",
+          "id": 8,
+          "gridPos": {"h": 9, "w": 12, "x": 12, "y": 16},
+          "targets": [
+            {"expr": "sum(vllm:num_requests_running)", "legendFormat": "running"},
+            {"expr": "sum(vllm:num_requests_waiting)", "legendFormat": "waiting"}
+          ],
+          "fieldConfig": {"defaults": {}, "overrides": []}
+        }
+      ],
+      "refresh": "15s",
+      "schemaVersion": 41,
+      "tags": ["vllm", "gpu", "qwen3"],
+      "templating": {"list": []},
+      "time": {"from": "now-1h", "to": "now"},
+      "timezone": "browser",
+      "title": "Qwen3 vLLM and GPU Overview",
+      "uid": "qwen3-vllm-gpu",
+      "version": 1
+    }
