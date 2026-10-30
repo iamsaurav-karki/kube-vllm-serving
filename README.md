@@ -11,36 +11,6 @@ WebUI, Prometheus, Grafana, and NVIDIA DCGM metrics.
 > `terraform plan` has been reviewed and the operator explicitly approves the
 > estimated cost and resource creation.
 
-## Architecture
-
-```mermaid
-flowchart LR
-    User[Browser or API client] --> DNS[Public DNS]
-    DNS --> PIP[GPU worker public IP]
-    PIP -->|80/443 host ports| EG[Envoy Gateway]
-    EG -->|root route| UI[Open WebUI]
-    EG -->|/v1 route| VLLM[vLLM OpenAI API]
-    VLLM --> GPU[NVIDIA A10 24 GB]
-    VLLM --> CACHE[Local model-cache PVC]
-    PROM[Prometheus] --> VLLM
-    PROM --> DCGM[DCGM Exporter]
-    GRAF[Grafana] --> PROM
-
-    subgraph Azure VNet
-        CP[kubeadm control plane\nStandard_B2s_v2]
-        subgraph GPU Worker
-            EG
-            UI
-            VLLM
-            GPU
-            CACHE
-            DCGM
-        end
-        PROM
-        GRAF
-        CP --- GPU Worker
-    end
-```
 
 ## Cost Profile
 
